@@ -70,6 +70,28 @@ app.post("/api/auth/login", (req, res) => {
   }
 });
 
+// Signup endpoint
+app.post("/api/auth/signup", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    // Check if user already exists
+    const [existingUser] = await pool.execute('SELECT * FROM users WHERE username = ?', [username]);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    // Hash password (in production, use bcrypt)
+    // For simplicity, storing plain text - NOT RECOMMENDED FOR PRODUCTION
+    await pool.execute('INSERT INTO users (username, password) VALUES (?, ?)', [username, password]);
+
+    const token = jwt.sign({ username }, 'your-secret-key', { expiresIn: '1h' });
+    res.json({ token });
+  } catch (error) {
+    logger.error("Error during signup:", error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.post("/api/workflows/execute", authenticateToken, async (req, res) => {
   try {
     const workflow = req.body;

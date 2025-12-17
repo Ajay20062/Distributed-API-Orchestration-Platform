@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Distributed API Orchestration Platform</title>
+  <title>Signup - Distributed API Orchestration Platform</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -11,8 +11,8 @@
   <div class="login-container">
     <div class="login-card">
       <h1><i class="fas fa-cogs"></i> API Orchestration Platform</h1>
-      <p>Sign in to access your dashboard</p>
-      <form id="loginForm">
+      <p>Create your account</p>
+      <form id="signupForm">
         <div class="form-group">
           <label for="username"><i class="fas fa-user"></i> Username</label>
           <input type="text" id="username" name="username" required placeholder="Enter your username">
@@ -21,15 +21,19 @@
           <label for="password"><i class="fas fa-lock"></i> Password</label>
           <input type="password" id="password" name="password" required placeholder="Enter your password">
         </div>
-        <button type="submit" id="loginBtn">
-          <i class="fas fa-sign-in-alt"></i> Sign In
-          <div id="loginLoading" class="hidden"><i class="fas fa-spinner fa-spin"></i></div>
+        <div class="form-group">
+          <label for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Confirm your password">
+        </div>
+        <button type="submit" id="signupBtn">
+          <i class="fas fa-user-plus"></i> Sign Up
+          <div id="signupLoading" class="hidden"><i class="fas fa-spinner fa-spin"></i></div>
         </button>
       </form>
-      <div id="loginError" class="error-message hidden"></div>
-      <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+      <div id="signupError" class="error-message hidden"></div>
+      <p>Already have an account? <a href="login.html">Sign in</a></p>
     </div>
   </div>
-  <script src="login.js"></script>
+  <script src="signup.js"></script>
 </body>
 </html>
