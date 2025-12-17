@@ -1,10 +1,10 @@
-const express = require("express");
-const fetch = require("node-fetch");
-const cors = require("cors");
-const jwt = require("jsonwebtoken");
-const mysql = require("mysql2/promise");
-const Queue = require("bull");
-const winston = require("winston");
+import express from "express";
+import fetch from "node-fetch";
+import cors from "cors";
+import jwt from "jsonwebtoken";
+import mysql from "mysql2/promise";
+import Queue from "bull";
+import winston from "winston";
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -13,7 +13,7 @@ app.use(express.json());
 const pool = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "password",
+  password: "Killer123",
   database: "api_orchestrator",
   waitForConnections: true,
   connectionLimit: 10,
@@ -148,6 +148,74 @@ app.get("/api/workflows/history", authenticateToken, async (req, res) => {
 // Metrics endpoint
 app.get("/api/metrics", authenticateToken, (req, res) => {
   res.json(metrics);
+});
+
+// Job processor
+workflowQueue.process(async (job) => {
+  const { workflow, executionId } = job.data;
+  logger.info(`Processing workflow: ${executionId}`);
+
+  try {
+    const results = { stepResults: [], summary: { success: 0, failed: 0 } };
+
+    for (const step of workflow.steps) {
+      try {
+        const response = await fetch(step.url, {
+          method: step.method || 'GET',
+          headers: step.headers || {},
+          body: step.body ? JSON.stringify(step.body) : undefined
+        });
+
+        const data = await response.json();
+
+        results.stepResults.push({
+          stepId: step.stepId,
+          status: response.ok ? 'success' : 'failed',
+          statusCode: response.status,
+          data: data
+        });
+
+        if (response.ok) {
+          results.summary.success++;
+        } else {
+          results.summary.failed++;
+        }
+      } catch (error) {
+        logger.error(`Step ${step.stepId} failed:`, error);
+        results.stepResults.push({
+          stepId: step.stepId,
+          status: 'failed',
+          error: error.message
+        });
+        results.summary.failed++;
+      }
+    }
+
+    // Store execution result
+    await pool.execute(
+      'INSERT INTO executions (id, workflow_name, status, results, completed_at) VALUES (?, ?, ?, ?, NOW())',
+      [executionId, workflow.workflowName || 'Unnamed Workflow', 'completed', JSON.stringify(results)]
+    );
+
+    metrics.totalExecutions++;
+    metrics.successfulExecutions += results.summary.failed === 0 ? 1 : 0;
+    metrics.failedExecutions += results.summary.failed > 0 ? 1 : 0;
+
+    logger.info(`Workflow ${executionId} completed successfully`);
+  } catch (error) {
+    logger.error(`Workflow ${executionId} failed:`, error);
+
+    // Store failed execution
+    await pool.execute(
+      'INSERT INTO executions (id, workflow_name, status, results, completed_at) VALUES (?, ?, ?, ?, NOW())',
+      [executionId, workflow.workflowName || 'Unnamed Workflow', 'failed', JSON.stringify({ error: error.message }), null]
+    );
+
+    metrics.totalExecutions++;
+    metrics.failedExecutions++;
+
+    throw error; // Re-throw for BullMQ retry
+  }
 });
 
 app.listen(5000, () => console.log("Server running on port 5000"));

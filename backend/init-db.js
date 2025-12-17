@@ -1,10 +1,10 @@
-const mysql = require('mysql2/promise');
+import mysql from 'mysql2/promise';
 
 async function initDB() {
   const connection = await mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'password',
+    password: 'kil',
     database: 'api_orchestrator'
   });
 

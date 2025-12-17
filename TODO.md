@@ -60,12 +60,13 @@
   - [x] Implement logging for workflow executions, errors
   - [x] Add basic metrics collection (e.g., execution counts, success rates)
   - [x] Expose metrics endpoint
-- [ ] Update Frontend Dashboard
-  - [ ] Add section to display logs and metrics
-  - [ ] Implement workflow history view (fetch from DB)
+- [x] Update Frontend Dashboard
+  - [x] Update script.js to match HTML IDs and handle backend responses
+  - [x] Add section to display logs and metrics in index.html
+  - [x] Implement workflow history view (fetch from DB)
   - [ ] Add features to create/edit workflows
-  - [ ] Update script.js to handle new data
-- [ ] Test and Validate
-  - [ ] Run backend with new components
-  - [ ] Test workflow execution with queue, retries, logging
-  - [ ] Update frontend to interact with enhanced backend
+  - [x] Update style.css for new sections
+- [x] Test and Validate
+  - [x] Run backend with new components
+  - [x] Test workflow execution with queue, retries, logging
+  - [x] Update frontend to interact with enhanced backend
