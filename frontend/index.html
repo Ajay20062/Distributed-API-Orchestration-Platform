@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distributed API Orchestration Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<header>
+  <h1><i class="fas fa-cogs"></i> API Orchestration Dashboard</h1>
+  <p>Orchestrate and monitor your distributed API workflows</p>
+</header>
+<main>
+  <section class="input-section">
+    <h2><i class="fas fa-edit"></i> Workflow Configuration</h2>
+    <textarea id="workflowJson" rows="12" placeholder="Enter workflow JSON here">
+{
+  "workflowName": "SampleWorkflow",
+  "steps": [
+    { "stepId": "step1", "url": "https://jsonplaceholder.typicode.com/posts/1", "method": "GET" },
+    { "stepId": "step2", "url": "https://jsonplaceholder.typicode.com/users/1", "method": "GET" }
+  ]
+}
+    </textarea>
+    <button onclick="triggerWorkflow()" id="runBtn">
+      <i class="fas fa-play"></i> Run Workflow
+      <div id="loading" class="hidden"><i class="fas fa-spinner fa-spin"></i></div>
+    </button>
+  </section>
+  <section class="results-section">
+    <h2><i class="fas fa-chart-bar"></i> Execution Results</h2>
+    <div id="results" class="results-container"></div>
+    <div class="chart-container">
+      <canvas id="chart"></canvas>
+    </div>
+  </section>
+</main>
+<script>
+  // Check authentication on page load
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = 'login.html';
+  }
+</script>
+<script src="script.js"></script>
+</body>
+</html>
