@@ -5,9 +5,43 @@ import jwt from "jsonwebtoken";
 import mysql from "mysql2/promise";
 import Queue from "bull";
 import winston from "winston";
+import path from "path";
+import { fileURLToPath } from "url";
+import { WebSocketServer } from "ws";
+import { createServer } from "http";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+const server = createServer(app);
+const wss = new WebSocketServer({ server });
+
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from frontend directory
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// WebSocket connections
+const clients = new Set();
+
+wss.on('connection', (ws) => {
+  clients.add(ws);
+  ws.on('close', () => {
+    clients.delete(ws);
+  });
+});
+
+// Function to broadcast to all clients
+const broadcast = (data) => {
+  const message = JSON.stringify(data);
+  clients.forEach(client => {
+    if (client.readyState === client.OPEN) {
+      client.send(message);
+    }
+  });
+};
 
 // Database connection
 const pool = mysql.createPool({
@@ -59,14 +93,19 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Login endpoint
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
-  // Simple authentication - in production, use proper user database
-  if (username === 'admin' && password === 'password') {
-    const token = jwt.sign({ username }, 'your-secret-key', { expiresIn: '1h' });
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+  try {
+    const [rows] = await pool.execute('SELECT * FROM users WHERE username = ? AND password = ?', [username, password]);
+    if (rows.length > 0) {
+      const token = jwt.sign({ username }, 'your-secret-key', { expiresIn: '1h' });
+      res.json({ token });
+    } else {
+      res.status(401).json({ error: 'Invalid credentials' });
+    }
+  } catch (error) {
+    logger.error("Error during login:", error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -201,6 +240,15 @@ workflowQueue.process(async (job) => {
     metrics.successfulExecutions += results.summary.failed === 0 ? 1 : 0;
     metrics.failedExecutions += results.summary.failed > 0 ? 1 : 0;
 
+    // Broadcast update to all connected clients
+    broadcast({
+      type: 'workflow_completed',
+      executionId,
+      status: 'completed',
+      results,
+      metrics
+    });
+
     logger.info(`Workflow ${executionId} completed successfully`);
   } catch (error) {
     logger.error(`Workflow ${executionId} failed:`, error);
@@ -214,8 +262,30 @@ workflowQueue.process(async (job) => {
     metrics.totalExecutions++;
     metrics.failedExecutions++;
 
+    // Broadcast update to all connected clients
+    broadcast({
+      type: 'workflow_failed',
+      executionId,
+      status: 'failed',
+      error: error.message,
+      metrics
+    });
+
     throw error; // Re-throw for BullMQ retry
   }
 });
 
-app.listen(5000, () => console.log("Server running on port 5000"));
+// Routes for pages
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/login.html'));
+});
+
+app.get('/signup', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/signup.html'));
+});
+
+server.listen(5000, () => console.log("Server running on port 5000"));

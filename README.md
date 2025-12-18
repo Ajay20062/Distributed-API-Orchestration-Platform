@@ -17,15 +17,13 @@ This project orchestrates multiple APIs using asynchronous workflows, retries, l
 
 ## How to Run
 
-### Backend
+### Full Application
 ```
 cd backend
 npm install
 npm start
 ```
-
-### Frontend
-Open `frontend/index.html` in browser.
+Then open http://localhost:5000 in your browser to access the application.
 
 ## Use Case
 Automates chained API calls like payment flows, microservices orchestration, and data pipelines.

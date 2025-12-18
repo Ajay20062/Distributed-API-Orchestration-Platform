@@ -1,5 +1,63 @@
 let chart;
 let pollingInterval;
+let ws;
+
+// WebSocket connection
+function connectWebSocket() {
+  ws = new WebSocket('ws://localhost:5000');
+
+  ws.onopen = () => {
+    console.log('WebSocket connected');
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    handleWebSocketMessage(data);
+  };
+
+  ws.onclose = () => {
+    console.log('WebSocket disconnected');
+    // Reconnect after 5 seconds
+    setTimeout(connectWebSocket, 5000);
+  };
+
+  ws.onerror = (error) => {
+    console.error('WebSocket error:', error);
+  };
+}
+
+function handleWebSocketMessage(data) {
+  if (data.type === 'workflow_completed' || data.type === 'workflow_failed') {
+    // Update results if this execution is currently being displayed
+    const resultsDiv = document.getElementById("results");
+    if (resultsDiv.innerHTML.includes(data.executionId)) {
+      if (data.type === 'workflow_completed') {
+        displayExecutionResults({
+          id: data.executionId,
+          workflow_name: 'Workflow',
+          status: data.status,
+          results: JSON.stringify(data.results),
+          completed_at: new Date().toISOString()
+        });
+      } else {
+        resultsDiv.innerHTML = `<p>Execution failed: ${data.error}</p>`;
+      }
+      clearInterval(pollingInterval);
+    }
+    // Update metrics and history
+    updateMetrics(data.metrics);
+    loadHistory();
+  }
+}
+
+function updateMetrics(metrics) {
+  document.getElementById("metrics").innerHTML = `
+    <h3>Metrics</h3>
+    <p>Total Executions: ${metrics.totalExecutions}</p>
+    <p>Successful: ${metrics.successfulExecutions}</p>
+    <p>Failed: ${metrics.failedExecutions}</p>
+  `;
+}
 
 async function triggerWorkflow() {
   const textarea = document.getElementById("workflowJson");
@@ -162,6 +220,7 @@ async function loadHistory() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+  connectWebSocket();
   loadMetrics();
   loadHistory();
 });
